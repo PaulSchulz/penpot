@@ -7,12 +7,16 @@
     "luxon": "^1.27.0"
   },
   "scripts": {
-    "compile-and-watch-test": "clojure -M:dev:shadow-cljs watch test",
-    "compile-test": "clojure -M:dev:shadow-cljs compile test --config-merge '{:autorun false}'",
-    "run-test": "node target/test.js",
-    "test": "yarn run compile-test && yarn run run-test"
+    "test-compile": "clojure -M:dev:shadow-cljs compile test --config-merge '{:autorun false}'",
+    "test-watch-compile": "clojure -M:dev:shadow-cljs watch test",
+    "test-run": "node target/test.js",
+    "test-watch-run": "nodemon --signal SIGKILL --watch target --exec npm run test-run",
+    "test-watch": "npm-run-all --parallel test-watch-compile test-watch-run",
+    "test": "npm run test-watch"
   },
   "devDependencies": {
+    "nodemon": "^2.0.15",
+    "npm-run-all": "^4.1.5",
     "source-map-support": "^0.5.19",
     "ws": "^7.4.6"
   }

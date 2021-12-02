@@ -81,8 +81,8 @@ jobs:
           name: common tests
           command: |
             yarn install
-            yarn run compile-test
-            node target/test.js
+            yarn run test-compile
+            yarn run test-run
             clojure -X:dev:test
 
           environment:

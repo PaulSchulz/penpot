@@ -160,33 +160,48 @@
   applies (some of them ignore some attributes)"
   [shapes objects attr-type]
   (let [attrs (props->attrs attr-type)
+
         merge-attrs
         (fn [v1 v2]
           (cond
             (= attr-type :shadow) (attrs/get-attrs-multi [v1 v2] attrs shadow-eq shadow-sel)
             (= attr-type :blur)   (attrs/get-attrs-multi [v1 v2] attrs blur-eq blur-sel)
-            :else                 (attrs/get-attrs-multi [v1 v2] attrs)))
+            :else                 (attrs/get-attrs-multi [v1 v2] attrs)))]
 
-        extract-attrs
-        (fn [[ids values] {:keys [id type content] :as shape}]
-          (let [props (get-in type->props [type attr-type])]
-            (case props
-              :ignore   [ids values]
-              :shape    [(conj ids id)
-                         (merge-attrs values (merge
-                                              (empty-map attrs)
-                                              (select-keys shape attrs)))]
-              :text     [(conj ids id)
-                         (-> values
-                             (merge-attrs (select-keys shape attrs))
-                             (merge-attrs (merge
-                                           (select-keys txt/default-text-attrs attrs)
-                                           (attrs/get-attrs-multi (txt/node-seq content) attrs))))]
-              :children (let [children (->> (:shapes shape []) (map #(get objects %)))
-                              [new-ids new-values] (get-attrs* children objects attr-type)]
-                          [(d/concat-vec ids new-ids) (merge-attrs values new-values)])
-              [])))]
-    (reduce extract-attrs [[] []] shapes)))
+
+    (loop [ids [] values [] shapes (seq shapes)]
+      (if-let [{:keys [id type content] :as shape} (first shapes)]
+        (let [op (get-in type->props [type attr-type])]
+          (case op
+            :ignore
+            (recur ids values (rest shapes))
+
+            :shape
+            (recur (conj ids id)
+                   (merge-attrs values (merge (empty-map attrs) (select-keys shape attrs)))
+                   (rest shapes))
+
+            :text
+            (recur (conj ids id)
+                   (-> values
+                       (merge-attrs (select-keys shape attrs))
+                       (merge-attrs (merge
+                                     (select-keys txt/default-text-attrs attrs)
+                                     (attrs/get-attrs-multi (txt/node-seq content) attrs))))
+                   (rest shapes))
+
+            :children
+            (let [[new-ids new-values] (-> (map #(get objects %) (:shapes shape))
+                                           (get-attrs* objects attr-type))]
+              (recur (into ids new-ids)
+                     (merge-attrs values new-values)
+                     (rest shapes)))
+
+            #_:else
+            (recur [] [] (rest shapes))))
+        [ids values]))))
+
+;; TODO: memoize this is a huge overkill, we can't do it I think
 
 (def get-attrs (memoize get-attrs*))
 

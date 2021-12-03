@@ -33,7 +33,7 @@
       (let [shape      (unchecked-get props "shape")
             frame      (unchecked-get props "frame")
 
-            childs-ref (mf/use-memo (mf/deps shape) #(refs/objects-by-id (:shapes shape) {:with-modifiers? true}))
+            childs-ref (mf/use-memo (mf/deps shape) #(refs/objects-by-id (:shapes shape) {:with-modifiers? false}))
             childs     (mf/deref childs-ref)]
 
         [:> shape-container {:shape shape}

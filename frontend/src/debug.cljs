@@ -18,7 +18,11 @@
    [beicon.core :as rx]
    [cljs.pprint :refer [pprint]]
    [cuerdas.core :as str]
-   [potok.core :as ptk]))
+   [potok.core :as ptk]
+
+   [app.main.data.workspace.transforms :as tr]
+   [app.common.uuid :as uuid]
+   [app.common.geom.point :as gpt]))
 
 (def debug-options #{:bounding-boxes :group :events :rotation-handler :resize-handler :selection-center :export :import #_:simple-selection})
 
@@ -247,3 +251,21 @@
     (println "Clojure matrix. Total: " m1 " (" (/ m1 iterations) ")")
     (println "Clojure matrix (NEW). Total: " m2 " (" (/ m2 iterations) ")")
     (println "Affine transform (with new). Total: " m3 " (" (/ m3 iterations) ")")))
+
+(defn ^:export bench-set-modifiers
+  []
+  (let [id (uuid/uuid "5e1b3680-5109-11ec-9516-e5c4d58ebaef")
+        modifiers {:displacement nil
+                   :resize-vector (gpt/point 2 2)
+                   :resize-origin (gpt/point -553 4126)
+                   :resize-transform (gmt/matrix)
+                   :resize-scale-text nil,
+                   :resize-transform-inverse (gmt/matrix)}
+
+        
+        ]
+
+    ()
+    
+    
+    ))

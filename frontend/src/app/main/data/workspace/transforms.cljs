@@ -228,7 +228,45 @@
 
     [root transformed-root ignore-geometry?]))
 
-(defn- set-modifiers-recursive
+(defn- set-modifiers-iterative
+  [modif-tree objects shape' modifiers' root transformed-root ignore-constraints]
+
+  (let [shapes (cp/get-children-objects (:id shape') objects)]
+    (loop [head             shape'
+           tail             shapes
+           child-modifiers  {(:id shape') modifiers'}
+           root             root
+           transformed-root transformed-root
+           result           modif-tree]
+
+      (if (some? head)
+        (let [modifiers (get child-modifiers (:id head))
+              transformed-shape (gsh/transform-shape (assoc head :modifiers modifiers))
+
+              [root transformed-root ignore-geometry?]
+              (check-delta head root transformed-shape transformed-root objects)
+
+              modifiers (assoc modifiers :ignore-geometry? ignore-geometry?)
+
+              transformed-rect (gsh/calc-transformed-parent-rect head modifiers)
+
+              child-modifiers
+              (reduce (fn [child-modifiers id]
+                        (let [modif (gsh/calc-child-modifiers head (get objects id) modifiers ignore-constraints transformed-rect)]
+                          (assoc child-modifiers id modif)))
+                      child-modifiers
+                      (:shapes head))
+
+              result (assoc-in result [(:id head) :modifiers] modifiers)]
+          (recur (first tail)
+                 (rest tail)
+                 child-modifiers
+                 root
+                 transformed-root
+                 result))
+        result))))
+
+(defn- set-modifiers-recursive*
   [modif-tree objects shape modifiers root transformed-root ignore-constraints]
   (let [children (map (d/getf objects) (:shapes shape))
 
@@ -260,6 +298,22 @@
             (assoc-in [(:id shape) :modifiers] modifiers))]
 
     (reduce set-child modif-tree children)))
+
+(defn set-modifiers-recursive
+  [modif-tree objects shape modifiers root transformed-root ignore-constraints]
+
+  (println "?set-modifiers-recursive" (:name shape) modifiers)
+  (set-modifiers-iterative modif-tree objects shape modifiers root transformed-root ignore-constraints)
+  #_(set-modifiers-recursive* modif-tree objects shape modifiers root transformed-root ignore-constraints)
+  #_(let [old (set-modifiers-recursive* modif-tree objects shape modifiers root transformed-root ignore-constraints)
+        new (set-modifiers-iterative modif-tree objects shape modifiers root transformed-root ignore-constraints)]
+
+    #_(when (not= new old)
+        (.error js/console "!!")
+        (.log js/console (clj->js new) (clj->js old)))
+
+    new
+    ))
 
 (defn- set-local-displacement [point]
   (ptk/reify ::start-local-displacement
@@ -389,6 +443,7 @@
                 (rx/switch-map (fn [[point _ _ :as current]]
                                  (->> (snap/closest-snap-point page-id resizing-shapes layout zoom point)
                                       (rx/map #(conj current %)))))
+                ;;(rx/tap #(.log js/console (.log js/console (clj->js %))))
                 (rx/mapcat (partial resize shape initial-position layout))
                 (rx/take-until stoper))
            (rx/of (apply-modifiers ids)

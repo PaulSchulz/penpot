@@ -38,17 +38,10 @@
 
     buffer))
 
-(defn emit!
-  ([] nil)
-  ([event]
-   (ptk/emit! state event)
-   nil)
-  ([event & events]
-   (apply ptk/emit! state (cons event events))
-   nil))
+(def emit! (partial ptk/emit! state))
 
 (defn emitf
   [& events]
-  #(apply ptk/emit! state events))
+  #(ptk/emit! state events))
 
 
